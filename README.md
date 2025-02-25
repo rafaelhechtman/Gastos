@@ -11,11 +11,11 @@
             padding: 0;
             background-color: #f4f4f4;
         }
-        h2 {
+        h2, h3 {
             text-align: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: auto;
             background: white;
             padding: 20px;
@@ -59,14 +59,19 @@
         .delete-btn:hover {
             background-color: #c82333;
         }
+        .highlight {
+            font-weight: bold;
+            color: red;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>Organizador de Gastos</h2>
+        
         <label for="nome">Nome do Gasto:</label>
-        <input type="text" id="nome" placeholder="Ex: Uber, Mercado">
+        <input type="text" id="nome" placeholder="Ex: Mercado, Academia">
 
         <label for="valor">Valor (R$):</label>
         <input type="number" id="valor" placeholder="Ex: 50.00">
@@ -76,15 +81,22 @@
             <option value="Alimentação">Alimentação</option>
             <option value="Transporte">Transporte</option>
             <option value="Lazer">Lazer</option>
+            <option value="Moradia">Moradia</option>
+            <option value="Saúde">Saúde</option>
+            <option value="Educação">Educação</option>
+            <option value="Entretenimento">Entretenimento</option>
+            <option value="Investimentos">Investimentos</option>
             <option value="Outros">Outros</option>
         </select>
 
         <button onclick="adicionarGasto()">Adicionar Gasto</button>
 
-        <h3>Lista de Gastos</h3>
+        <h3>Relatório de Gastos</h3>
         <table>
             <thead>
                 <tr>
+                    <th>Data</th>
+                    <th>Hora</th>
                     <th>Nome</th>
                     <th>Valor (R$)</th>
                     <th>Categoria</th>
@@ -104,6 +116,9 @@
             let nome = document.getElementById("nome").value;
             let valor = document.getElementById("valor").value;
             let categoria = document.getElementById("categoria").value;
+            let data = new Date();
+            let dataFormatada = data.toLocaleDateString();
+            let horaFormatada = data.toLocaleTimeString();
 
             if (nome === "" || valor === "") {
                 alert("Por favor, preencha todos os campos.");
@@ -111,9 +126,9 @@
             }
 
             let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
-            gastos.push({ nome, valor, categoria });
+            gastos.push({ dataFormatada, horaFormatada, nome, valor, categoria });
 
-                        localStorage.setItem("gastos", JSON.stringify(gastos));
+            localStorage.setItem("gastos", JSON.stringify(gastos));
 
             document.getElementById("nome").value = "";
             document.getElementById("valor").value = "";
@@ -127,12 +142,18 @@
             listaGastos.innerHTML = "";
             let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
 
+            // Ordena do mais recente para o mais antigo
+            gastos.sort((a, b) => new Date(b.dataFormatada + " " + b.horaFormatada) - new Date(a.dataFormatada + " " + a.horaFormatada));
+
             gastos.forEach((gasto, index) => {
                 let row = document.createElement("tr");
-
+                let valorFormatado = parseFloat(gasto.valor).toFixed(2);
+                
                 row.innerHTML = `
+                    <td>${gasto.dataFormatada}</td>
+                    <td>${gasto.horaFormatada}</td>
                     <td>${gasto.nome}</td>
-                    <td>R$ ${parseFloat(gasto.valor).toFixed(2)}</td>
+                    <td class="${gasto.valor > 100 ? 'highlight' : ''}">R$ ${valorFormatado}</td>
                     <td>${gasto.categoria}</td>
                     <td><button class="delete-btn" onclick="removerGasto(${index})">Excluir</button></td>
                 `;
