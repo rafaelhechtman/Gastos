@@ -94,6 +94,7 @@
         <h3>Filtrar Gastos por Data</h3>
         <input type="date" id="dataFiltro">
         <button onclick="filtrarGastos()">Exibir Gastos</button>
+        <button onclick="gerarRelatorio()">Gerar Relatório</button>
 
         <h3>Relatório de Gastos</h3>
         <table>
@@ -107,10 +108,11 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="lista-gastos">
-                <!-- Os gastos aparecerão aqui -->
-            </tbody>
+            <tbody id="lista-gastos"></tbody>
         </table>
+
+        <h3>Relatório Detalhado</h3>
+        <div id="relatorio"></div>
     </div>
 
     <script>
@@ -121,7 +123,7 @@
             let valor = document.getElementById("valor").value;
             let categoria = document.getElementById("categoria").value;
             let data = new Date();
-            let dataFormatada = data.toISOString().split('T')[0]; // Formato YYYY-MM-DD para facilitar a filtragem
+            let dataFormatada = data.toISOString().split('T')[0]; 
             let horaFormatada = data.toLocaleTimeString();
 
             if (nome === "" || valor === "") {
@@ -146,7 +148,6 @@
             listaGastos.innerHTML = "";
             let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
 
-            // Exibir todos os gastos por padrão
             gastos.forEach((gasto, index) => {
                 adicionarLinhaTabela(gasto, index);
             });
@@ -174,28 +175,47 @@
             }
         }
 
-        function adicionarLinhaTabela(gasto, index) {
-            let listaGastos = document.getElementById("lista-gastos");
-            let row = document.createElement("tr");
-            let valorFormatado = parseFloat(gasto.valor).toFixed(2);
-                
-            row.innerHTML = `
-                <td>${gasto.dataFormatada}</td>
-                <td>${gasto.horaFormatada}</td>
-                <td>${gasto.nome}</td>
-                <td class="${gasto.valor > 100 ? 'highlight' : ''}">R$ ${valorFormatado}</td>
-                <td>${gasto.categoria}</td>
-                <td><button class="delete-btn" onclick="removerGasto(${index})">Excluir</button></td>
-            `;
+        function gerarRelatorio() {
+            let dataEscolhida = document.getElementById("dataFiltro").value;
+            if (!dataEscolhida) {
+                alert("Por favor, selecione uma data.");
+                return;
+            }
 
-            listaGastos.appendChild(row);
-        }
-
-        function removerGasto(index) {
             let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
-            gastos.splice(index, 1);
-            localStorage.setItem("gastos", JSON.stringify(gastos));
-            carregarGastos();
+            let gastosFiltrados = gastos.filter(gasto => gasto.dataFormatada === dataEscolhida);
+
+            if (gastosFiltrados.length === 0) {
+                document.getElementById("relatorio").innerHTML = "<p>Nenhum gasto encontrado para esta data.</p>";
+                return;
+            }
+
+            let totalGasto = 0;
+            let categoriaResumo = {};
+            let maiorGasto = 0;
+            let menorGasto = Number.MAX_VALUE;
+
+            gastosFiltrados.forEach(gasto => {
+                let valor = parseFloat(gasto.valor);
+                totalGasto += valor;
+                if (valor > maiorGasto) maiorGasto = valor;
+                if (valor < menorGasto) menorGasto = valor;
+
+                if (!categoriaResumo[gasto.categoria]) {
+                    categoriaResumo[gasto.categoria] = { total: 0, quantidade: 0 };
+                }
+                categoriaResumo[gasto.categoria].total += valor;
+                categoriaResumo[gasto.categoria].quantidade++;
+            });
+
+            let relatorioHTML = `<p><strong>Total Gasto:</strong> R$ ${totalGasto.toFixed(2)}</p>`;
+            for (let categoria in categoriaResumo) {
+                relatorioHTML += `<p><strong>${categoria}:</strong> R$ ${categoriaResumo[categoria].total.toFixed(2)} (${categoriaResumo[categoria].quantidade} transações, média de R$ ${(categoriaResumo[categoria].total / categoriaResumo[categoria].quantidade).toFixed(2)})</p>`;
+            }
+            relatorioHTML += `<p><strong>Maior Gasto:</strong> R$ ${maiorGasto.toFixed(2)}</p>`;
+            relatorioHTML += `<p><strong>Menor Gasto:</strong> R$ ${menorGasto.toFixed(2)}</p>`;
+
+            document.getElementById("relatorio").innerHTML = relatorioHTML;
         }
     </script>
 
