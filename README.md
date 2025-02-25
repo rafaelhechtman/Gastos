@@ -91,6 +91,10 @@
 
         <button onclick="adicionarGasto()">Adicionar Gasto</button>
 
+        <h3>Filtrar Gastos por Data</h3>
+        <input type="date" id="dataFiltro">
+        <button onclick="filtrarGastos()">Exibir Gastos</button>
+
         <h3>Relatório de Gastos</h3>
         <table>
             <thead>
@@ -117,7 +121,7 @@
             let valor = document.getElementById("valor").value;
             let categoria = document.getElementById("categoria").value;
             let data = new Date();
-            let dataFormatada = data.toLocaleDateString();
+            let dataFormatada = data.toISOString().split('T')[0]; // Formato YYYY-MM-DD para facilitar a filtragem
             let horaFormatada = data.toLocaleTimeString();
 
             if (nome === "" || valor === "") {
@@ -142,24 +146,49 @@
             listaGastos.innerHTML = "";
             let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
 
-            // Ordena do mais recente para o mais antigo
-            gastos.sort((a, b) => new Date(b.dataFormatada + " " + b.horaFormatada) - new Date(a.dataFormatada + " " + a.horaFormatada));
-
+            // Exibir todos os gastos por padrão
             gastos.forEach((gasto, index) => {
-                let row = document.createElement("tr");
-                let valorFormatado = parseFloat(gasto.valor).toFixed(2);
-                
-                row.innerHTML = `
-                    <td>${gasto.dataFormatada}</td>
-                    <td>${gasto.horaFormatada}</td>
-                    <td>${gasto.nome}</td>
-                    <td class="${gasto.valor > 100 ? 'highlight' : ''}">R$ ${valorFormatado}</td>
-                    <td>${gasto.categoria}</td>
-                    <td><button class="delete-btn" onclick="removerGasto(${index})">Excluir</button></td>
-                `;
-
-                listaGastos.appendChild(row);
+                adicionarLinhaTabela(gasto, index);
             });
+        }
+
+        function filtrarGastos() {
+            let dataEscolhida = document.getElementById("dataFiltro").value;
+            if (!dataEscolhida) {
+                alert("Por favor, selecione uma data.");
+                return;
+            }
+
+            let listaGastos = document.getElementById("lista-gastos");
+            listaGastos.innerHTML = "";
+            let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+
+            let gastosFiltrados = gastos.filter(gasto => gasto.dataFormatada === dataEscolhida);
+
+            if (gastosFiltrados.length === 0) {
+                listaGastos.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Nenhum gasto encontrado para esta data.</td></tr>";
+            } else {
+                gastosFiltrados.forEach((gasto, index) => {
+                    adicionarLinhaTabela(gasto, index);
+                });
+            }
+        }
+
+        function adicionarLinhaTabela(gasto, index) {
+            let listaGastos = document.getElementById("lista-gastos");
+            let row = document.createElement("tr");
+            let valorFormatado = parseFloat(gasto.valor).toFixed(2);
+                
+            row.innerHTML = `
+                <td>${gasto.dataFormatada}</td>
+                <td>${gasto.horaFormatada}</td>
+                <td>${gasto.nome}</td>
+                <td class="${gasto.valor > 100 ? 'highlight' : ''}">R$ ${valorFormatado}</td>
+                <td>${gasto.categoria}</td>
+                <td><button class="delete-btn" onclick="removerGasto(${index})">Excluir</button></td>
+            `;
+
+            listaGastos.appendChild(row);
         }
 
         function removerGasto(index) {
